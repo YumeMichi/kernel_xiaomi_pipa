@@ -52,6 +52,12 @@
  */
 #define SCHED_FEAT_TTWU_QUEUE 0
 
+#ifdef CONFIG_PREEMPT_RT_FULL
+#ifdef CONFIG_PREEMPT_LAZY
+#define SCHED_FEAT_PREEMPT_LAZY 1
+#endif
+#endif
+
 /*
  * When doing wakeups, attempt to limit superfluous scans of the LLC domain.
  */
