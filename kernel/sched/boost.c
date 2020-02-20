@@ -23,6 +23,10 @@ enum sched_boost_policy boost_policy;
 static enum sched_boost_policy boost_policy_dt = SCHED_BOOST_NONE;
 static DEFINE_MUTEX(boost_mutex);
 
+#ifdef CONFIG_DYNAMIC_STUNE_BOOST
+static int boost_slot[RESTRAINED_BOOST];
+#endif
+
 /*
  * Scheduler boost type and boost policy might at first seem unrelated,
  * however, there exists a connection between them that will allow us
@@ -67,32 +71,50 @@ static void sched_full_throttle_boost_enter(void)
 {
 	core_ctl_set_boost(true);
 	//walt_enable_frequency_aggregation(true);
+#ifdef CONFIG_DYNAMIC_STUNE_BOOST
+	do_stune_sched_boost(&boost_slot[0]);
+#endif
 }
 
 static void sched_full_throttle_boost_exit(void)
 {
 	core_ctl_set_boost(false);
 	//walt_enable_frequency_aggregation(false);
+#ifdef CONFIG_DYNAMIC_STUNE_BOOST
+	reset_stune_boost(boost_slot[0]);
+#endif
 }
 
 static void sched_conservative_boost_enter(void)
 {
 	update_cgroup_boost_settings();
+#ifdef CONFIG_DYNAMIC_STUNE_BOOST
+	do_stune_boost(get_sched_boost() / 2, &boost_slot[1]);
+#endif
 }
 
 static void sched_conservative_boost_exit(void)
 {
 	restore_cgroup_boost_settings();
+#ifdef CONFIG_DYNAMIC_STUNE_BOOST
+	reset_stune_boost(boost_slot[1]);
+#endif
 }
 
 static void sched_restrained_boost_enter(void)
 {
 	//walt_enable_frequency_aggregation(true);
+#ifdef CONFIG_DYNAMIC_STUNE_BOOST
+	do_stune_sched_boost(&boost_slot[2]);
+#endif
 }
 
 static void sched_restrained_boost_exit(void)
 {
 	//walt_enable_frequency_aggregation(false);
+#ifdef CONFIG_DYNAMIC_STUNE_BOOST
+	reset_stune_boost(boost_slot[2]);
+#endif
 }
 
 struct sched_boost_data {
