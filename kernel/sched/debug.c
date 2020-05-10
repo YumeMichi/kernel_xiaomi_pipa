@@ -1005,9 +1005,9 @@ void proc_sched_show_task(struct task_struct *p, struct pid_namespace *ns,
 #endif
 #ifdef CONFIG_UCLAMP_TASK
 	SEQ_printf(m, "%-45s:%21lu\n", "uclamp.min",
-		   (unsigned long)p->uclamp[UCLAMP_MIN].value);
+		   (unsigned long)p->uclamp_req[UCLAMP_MIN].value);
 	SEQ_printf(m, "%-45s:%21lu\n", "uclamp.max",
-		   (unsigned long)p->uclamp[UCLAMP_MAX].value);
+		   (unsigned long)p->uclamp_req[UCLAMP_MAX].value);
 	SEQ_printf(m, "%-45s:%21lu\n", "effective uclamp.min",
 		   uclamp_eff_value(p, UCLAMP_MIN));
 	SEQ_printf(m, "%-45s:%21lu\n", "effective uclamp.max",
