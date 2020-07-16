@@ -82,6 +82,9 @@ show up in /proc/sys/kernel:
 - rtsig-max
 - rtsig-nr
 - sched_energy_aware
+- sched_util_clamp_min
+- sched_util_clamp_max
+- sched_util_clamp_min_rt_default
 - seccomp/                    ==> Documentation/userspace-api/seccomp_filter.rst
 - sem
 - sem_next_id		      [ sysv ipc ]
@@ -958,6 +961,34 @@ sched_schedstats:
 Enables/disables scheduler statistics. Enabling this feature
 incurs a small amount of overhead in the scheduler but is
 useful for debugging and performance tuning.
+
+==============================================================
+
+sched_util_clamp_min:
+
+Maximum allowed minimum utilization. The default is 1024, the maximum
+possible value. Requested uclamp.min values are restricted to the range
+[0:sched_util_clamp_min].
+
+==============================================================
+
+sched_util_clamp_max:
+
+Maximum allowed maximum utilization. The default is 1024, the maximum
+possible value. Requested uclamp.max values are restricted to the range
+[0:sched_util_clamp_max].
+
+==============================================================
+
+sched_util_clamp_min_rt_default:
+
+By default, RT tasks request uclamp.min of 1024. This boosts them toward
+the highest frequency and highest-capacity CPU. This knob changes that
+default for RT tasks without a user-defined uclamp.min request.
+
+The value remains bounded by sched_util_clamp_min. For example, a value
+of 800 with sched_util_clamp_min set to 600 results in an effective boost
+of 600.
 
 ==============================================================
 
