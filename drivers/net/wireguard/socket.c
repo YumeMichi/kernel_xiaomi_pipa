@@ -53,7 +53,7 @@ static int send4(struct wg_device *wg, struct sk_buff *skb,
 		if (unlikely(!inet_confirm_addr(sock_net(sock), NULL, 0,
 						fl.saddr, RT_SCOPE_HOST))) {
 			endpoint->src4.s_addr = 0;
-			*(__force __be32 *)&endpoint->src_if4 = 0;
+			endpoint->src_if4 = 0;
 			fl.saddr = 0;
 			if (cache)
 				dst_cache_reset(cache);
@@ -62,7 +62,7 @@ static int send4(struct wg_device *wg, struct sk_buff *skb,
 		if (unlikely(endpoint->src_if4 && ((PTR_ERR(rt) == -EINVAL) || (!IS_ERR(rt) &&
 										rt->dst.dev->ifindex != endpoint->src_if4)))) {
 			endpoint->src4.s_addr = 0;
-			*(__force __be32 *)&endpoint->src_if4 = 0;
+			endpoint->src_if4 = 0;
 			fl.saddr = 0;
 			if (cache)
 				dst_cache_reset(cache);
