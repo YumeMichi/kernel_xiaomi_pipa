@@ -57,6 +57,20 @@ endif
 
 KBUILD_CFLAGS	+= -mgeneral-regs-only
 KBUILD_CFLAGS	+= $(compat_vdso) $(cc_has_k_constraint)
+
+ifeq ($(CONFIG_ARCH_KONA), y)
+ifeq ($(CONFIG_CC_IS_CLANG),y)
+KBUILD_CFLAGS   += -mcpu=cortex-a77
+KBUILD_AFLAGS   += -mcpu=cortex-a77
+ifeq ($(CONFIG_LD_IS_LLD), y)
+KBUILD_LDFLAGS  += -mllvm -mcpu=cortex-a77
+endif
+else
+KBUILD_CFLAGS   += -mcpu=cortex-a77.cortex-a55
+KBUILD_AFLAGS   += -mcpu=cortex-a77.cortex-a55
+endif
+endif
+
 KBUILD_CFLAGS	+= -fno-asynchronous-unwind-tables
 KBUILD_CFLAGS	+= $(call cc-disable-warning, psabi)
 KBUILD_AFLAGS	+= $(compat_vdso)
