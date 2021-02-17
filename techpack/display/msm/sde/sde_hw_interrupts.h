@@ -299,6 +299,7 @@ struct sde_hw_intr {
 	u32 sde_irq_map_size;
 	struct sde_irq_type *sde_irq_map;
 	spinlock_t irq_lock;
+
 };
 
 /**
