@@ -480,6 +480,7 @@ struct dma_buf {
 		struct dma_buf *dmabuf;
 	} *sysfs_entry;
 #endif
+	bool from_kmem;
 };
 
 /**
