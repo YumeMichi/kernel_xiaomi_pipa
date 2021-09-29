@@ -4796,16 +4796,11 @@ static inline void sched_submit_work(struct task_struct *tsk)
 		return;
 
 	/*
-	 * If a worker went to sleep, notify and ask workqueue whether
-	 * it wants to wake up a task to maintain concurrency.
-	 * As this function is called inside the schedule() context,
-	 * we disable preemption to avoid it calling schedule() again
-	 * in the possible wakeup of a kworker.
+	 * If a worker goes to sleep, notify and ask workqueue whether it
+	 * wants to wake up a task to maintain concurrency.
 	 */
 	if (tsk->flags & PF_WQ_WORKER) {
-		preempt_disable();
 		wq_worker_sleeping(tsk);
-		preempt_enable_no_resched();
 	}
 
 	/*
