@@ -83,6 +83,7 @@ struct cpufreq_qcom {
 	char dcvsh_irq_name[MAX_FN_SIZE];
 	bool is_irq_enabled;
 	bool is_irq_requested;
+	bool invalidate_freq;
 };
 
 struct cpufreq_counter {
@@ -538,6 +539,7 @@ static int qcom_cpufreq_hw_read_lut(struct platform_device *pdev,
 		if (!of_find_freq(of_table, of_len, c->table[i].frequency)) {
 			c->table[i].frequency = CPUFREQ_ENTRY_INVALID;
 			cur_freq = CPUFREQ_ENTRY_INVALID;
+			c->invalidate_freq = true;
 		} else {
 			if (core_count != c->max_cores) {
 				if (core_count == (c->max_cores - 1)) {
@@ -572,6 +574,7 @@ static int qcom_cpufreq_hw_read_lut(struct platform_device *pdev,
 				}
 				break;
 			}
+			c->invalidate_freq = false;
 		}
 
 		prev_cc = core_count;
@@ -581,8 +584,9 @@ static int qcom_cpufreq_hw_read_lut(struct platform_device *pdev,
 			cpu_dev = get_cpu_device(cpu);
 			if (!cpu_dev)
 				continue;
-			dev_pm_opp_add(cpu_dev, c->table[i].frequency * 1000,
-							volt);
+			if (!c->invalidate_freq)
+				dev_pm_opp_add(cpu_dev, c->table[i].frequency * 1000,
+								volt);
 		}
 	}
 
