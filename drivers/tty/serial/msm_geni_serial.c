@@ -2607,7 +2607,8 @@ static int msm_geni_serial_startup(struct uart_port *uport)
 			return -ENOMEM;
 		INIT_DELAYED_WORK(&msm_port->wakeup_irq_dwork,
 				  msm_geni_wakeup_work);
-		ret = request_irq(msm_port->wakeup_irq, msm_geni_wakeup_isr,
+		ret = request_threaded_irq(msm_port->wakeup_irq, NULL,
+				  msm_geni_wakeup_isr,
 				  IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
 				  "hs_uart_wakeup", uport);
 		if (unlikely(ret)) {
