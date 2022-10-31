@@ -1440,8 +1440,10 @@ int del_timer_sync(struct timer_list *timer)
 	 * Must be able to sleep on PREEMPT_RT because of the slowpath in
 	 * del_timer_wait_running().
 	 */
+#if 0
 	if (IS_ENABLED(CONFIG_PREEMPT_RT) && !(timer->flags & TIMER_IRQSAFE))
-		might_sleep();
+		lockdep_assert_preemption_enabled();
+#endif
 
 	do {
 		ret = try_to_del_timer_sync(timer);
