@@ -135,3 +135,14 @@ all.config
 
 # fetched Android config fragments
 kernel/configs/android-*.cfg
+
+# build
+anykernel/Image.gz
+anykernel/dtbo.img
+out
+kernel.zip
+
+drivers/staging/kperfevents
+drivers/staging/misysinfofreader
+include/linux/kperfevents.h
+include/linux/misysinfofreader.h
