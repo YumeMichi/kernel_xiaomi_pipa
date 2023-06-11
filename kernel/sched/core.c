@@ -9626,7 +9626,7 @@ void migrate_enable(void)
 	WARN_ON(smp_processor_id() != cpu);
 
 out:
-	preempt_lazy_enable();
+	dec_preempt_lazy_count();
 	preempt_enable();
 }
 EXPORT_SYMBOL(migrate_enable);
