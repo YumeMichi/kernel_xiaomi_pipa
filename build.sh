@@ -11,36 +11,17 @@ clear
 # Number of parallel jobs to run
 THREAD="-j$(nproc)"
 
-# AOSP clang 14.0.6 (https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/)
-CLANG_BUILD="r450784d"
-
-# Path to executables in LLVM toolchain
-CLANG_BIN="/home/violet/toolchains/clang/clang-$CLANG_BUILD/bin"
-
-# GCC toolchain prefix
-GCC_PREFIX="/home/violet/toolchains/gcc/aarch64-linux-android-4.9/bin/aarch64-linux-android-"
-
-# Environment
-export PATH="$CLANG_BIN:$PATH"
-
 # Vars
 ARCH="arm64"
 OUT="out"
 
 KMAKE_FLAGS=(
-    TARGET_PRODUCT=pipa
-
     -j"$(nproc)"
     ARCH="$ARCH"
     O="$OUT"
 
-    LLVM=1
-    LLVM_IAS=1
-
-    CC="clang"
-    CLANG_TRIPLE="aarch64-linux-gnu-"
-
-    CROSS_COMPILE="$GCC_PREFIX"
+    CROSS_COMPILE="aarch64-linux-gnu-"
+    CROSS_COMPILE_COMPAT="arm-none-eabi-"
 )
 
 # Kernel defconfig
@@ -53,7 +34,6 @@ function clean_all {
 }
 
 function make_kernel {
-    clang -v
     make "${KMAKE_FLAGS[@]}" $DEFCONFIG savedefconfig
     make "${KMAKE_FLAGS[@]}"
 }
