@@ -752,6 +752,7 @@ KBUILD_CFLAGS	+= $(call cc-disable-warning, unused-result)
 KBUILD_CFLAGS	+= $(call cc-disable-warning, unused-value)
 KBUILD_CFLAGS	+= $(call cc-disable-warning, zero-length-bounds)
 KBUILD_CFLAGS	+= $(call cc-disable-warning, address)
+KBUILD_CFLAGS	+= $(call cc-disable-warning, format)
 
 ifeq ($(CONFIG_CC_OPTIMIZE_FOR_SIZE), y)
 KBUILD_CFLAGS   += -Os
