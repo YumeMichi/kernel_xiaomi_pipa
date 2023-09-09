@@ -344,7 +344,7 @@ unsigned char *read_buf, int *read_len, int write_len)
 	// check for strong pull-up
 	if (delay_ms > 0) {
 		write_byte_slave(CMD_RELEASE_BYTE);
-		Delay_us_slave(1000*delay_ms);
+		Delay_ms_slave(delay_ms);
 	}
 
 	read_byte_slave();

@@ -1,6 +1,7 @@
 #ifndef __ONEWIRE_GPIO_MASTER_H__
 #define __ONEWIRE_GPIO_MASTER_H__
 
+void Delay_ms(unsigned int T);
 void Delay_us(unsigned int T);
 void Delay_ns(unsigned int T);
 unsigned char ow_reset(void);
