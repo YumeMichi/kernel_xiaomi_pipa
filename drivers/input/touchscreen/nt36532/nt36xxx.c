@@ -2456,7 +2456,7 @@ static void update_touchfeature_value_work(struct work_struct *work) {
 	NVT_LOG("exit");
 }
 
-static void nvt_set_gesture_mode()
+static void nvt_set_gesture_mode(void)
 {
 	NVT_LOG("%s double click wakeup", ts->db_wakeup ? "ENABLE" : "DISABLE");
 	if (ts->ic_state <= NVT_IC_SUSPEND_OUT && ts->ic_state != NVT_IC_INIT ) {

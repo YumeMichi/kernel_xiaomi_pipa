@@ -535,16 +535,17 @@ static int dsi_panel_power_off(struct dsi_panel *panel)
 
 	if (panel->mi_cfg.is_tddi_flag) {
 		if (!panel->mi_cfg.tddi_doubleclick_flag || panel->mi_cfg.panel_dead_flag) {
-			if (gpio_is_valid(panel->reset_config.reset_gpio))
+			if (gpio_is_valid(panel->reset_config.reset_gpio)) {
 				gpio_set_value(panel->reset_config.reset_gpio, 0);
 				if (gpio_is_valid(panel->reset_config.tp_reset_gpio) && !panel->reset_gpio_always_on
 					&& panel->mi_cfg.panel_id == 0x4C38314100420400){
 					rc=gpio_direction_output(panel->reset_config.tp_reset_gpio, 0);
-					if (rc){
-							DSI_ERR("unable to set direction for gpio [%d]\n",
-							panel->reset_config.tp_reset_gpio);
+					if (rc) {
+						DSI_ERR("unable to set direction for gpio [%d]\n",
+						panel->reset_config.tp_reset_gpio);
 					}
 				}
+			}
 		}
 	} else {
 		if (gpio_is_valid(panel->reset_config.reset_gpio) &&
@@ -778,9 +779,9 @@ int dsi_panel_update_backlight(struct dsi_panel *panel,
 	if (panel->bl_config.bl_inverted_dbv)
 		bl_lvl = (((bl_lvl & 0xff) << 8) | (bl_lvl >> 8));
 
-	if (panel->bl_config.bl_dcs_subtype == 0xc2)
+	if (panel->bl_config.bl_dcs_subtype == 0xc2) {
 		rc = dsi_panel_dcs_set_display_brightness_c2(dsi, bl_lvl);
-	else
+	} else {
 		if (panel->mi_cfg.bl_is_big_endian) {
 			if ((!mi_cfg->last_bl_level && bl_lvl) ||
 				(mi_cfg->last_bl_level && !bl_lvl))
@@ -816,6 +817,7 @@ int dsi_panel_update_backlight(struct dsi_panel *panel,
 				mi_dsi_panel_set_fod_brightness(dsi, bl_lvl);
 			}
 		}
+	}
 
 	if (rc < 0)
 		DSI_ERR("failed to update dcs backlight:%d\n", bl_lvl);

@@ -879,9 +879,10 @@ static int fg_gen4_get_battery_temp(struct fg_dev *fg, int *val)
 	else if((*val > 240 && slave_temp < 240) || (*val < 240 && slave_temp > 240))
 		*val = *val > slave_temp ?  *val : slave_temp;
 	else if((*val < -150 && slave_temp > -150)||(slave_temp < -150 && *val > -150)) {     
-		if(*val < -150)
+		if(*val < -150) {
 			*val = slave_temp;
 			pr_err("Error in connecting battery");
+		}
 	} else
 		*val = *val < slave_temp ?  *val : slave_temp;
 	return 0;

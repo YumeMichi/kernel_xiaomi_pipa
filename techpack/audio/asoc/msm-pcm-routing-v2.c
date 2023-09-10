@@ -22649,7 +22649,6 @@ static int msm_routing_put_stereo_to_custom_stereo_control(
 				if (topo_id < 0)
 					pr_debug("%s:Err:custom stereo topo %d",
 						 __func__, topo_id);
-					pr_debug("idx %d\n", idx);
 				if (topo_id == DS2_ADM_COPP_TOPOLOGY_ID)
 					rc = msm_ds2_dap_set_custom_stereo_onoff
 						(msm_bedais[be_index].port_id,
@@ -23813,7 +23812,7 @@ static const int mi2s_rx_vi_fb_tx_value[] = {
 };
 
 #if defined(CONFIG_SND_SOC_AW882XX_TDM)
-static const int const tert_tdm_rx_vi_fb_tx_value[] = {
+static const int tert_tdm_rx_vi_fb_tx_value[] = {
 	MSM_BACKEND_DAI_MAX, PLATFORM_TDM_RX_VI_FB_TX_VALUE
 };
 #endif
