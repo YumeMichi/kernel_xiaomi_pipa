@@ -500,7 +500,7 @@ static int aw_cali_svc_devs_cali_mode_enable(struct list_head *dev_list,
 						int type, unsigned int flag,
 						bool is_enable)
 {
-	int ret;
+	int ret = 0;
 	struct list_head *pos = NULL;
 	struct aw_device *local_dev = NULL;
 
@@ -520,7 +520,7 @@ static int aw_cali_svc_devs_cali_mode_enable(struct list_head *dev_list,
 
 static int aw_cali_svc_devs_cali_re(struct aw_device *aw_dev, unsigned int flag)
 {
-	int ret;
+	int ret = 0;
 	struct list_head *dev_list = NULL;
 
 	aw_dev_info(aw_dev->dev, "enter");
@@ -632,7 +632,7 @@ exit:
 
 static int aw_cali_svc_devs_cali_f0_q(struct aw_device *aw_dev, unsigned int flag)
 {
-	int ret;
+	int ret = 0;
 	struct list_head *dev_list = NULL;
 
 	ret = aw882xx_dev_get_list_head(&dev_list);
