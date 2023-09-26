@@ -21,7 +21,11 @@ export KBUILD_BUILD_HOST=android-build
 
 # Vars
 ARCH="arm64"
-OUT="out"
+OS="15.0.0"
+SPL="2025-06"
+KDIR=`readlink -f .`
+RAMFS=`readlink -f $KDIR/ramdisk`
+OUT=`readlink -f $KDIR/out`
 
 KMAKE_FLAGS=(
     -j"$(nproc)"
@@ -41,7 +45,7 @@ DEFCONFIG="vendor/pipa_user_defconfig"
 # Functions
 function clean_all {
     echo
-    git clean -fdx > /dev/null 2>&1
+    git clean -fdx >/dev/null 2>&1
 }
 
 function make_kernel {
@@ -50,11 +54,45 @@ function make_kernel {
     make "${KMAKE_FLAGS[@]}"
 }
 
+function make_bootimg {
+    echo "Making new boot image..."
+    mkbootimg \
+        --kernel $OUT/arch/arm64/boot/Image \
+        --ramdisk $RAMFS/ramdisk \
+        --os_version $OS \
+        --os_patch_level $SPL \
+        --pagesize 4096 \
+        --header_version 3 \
+        -o $OUT/boot.img
+}
+
+function make_vendor_bootimg {
+    echo "Making new vendor_boot image..."
+    mkbootimg \
+        --vendor_boot $OUT/vendor_boot.img \
+        --vendor_ramdisk $RAMFS/vendor_ramdisk \
+        --dtb $OUT/arch/arm64/boot/dtb \
+        --vendor_cmdline "androidboot.console=ttyMSM0 androidboot.hardware=qcom androidboot.init_fatal_reboot_target=recovery androidboot.memcg=1 androidboot.usbcontroller=a600000.dwc3 cgroup.memory=nokmem,nosocket console=ttyMSM0,115200n8 earlycon=msm_geni_serial,0xa90000 loop.max_part=7 lpm_levels.sleep_disabled=1 msm_rtb.filter=0x237 reboot=panic_warm service_locator.enable=1 swiotlb=2048 buildvariant=user" \
+        --pagesize 4096 \
+        --header_version 3
+}
+
+function flash_images {
+    adb reboot fastboot >/dev/null 2>&1
+
+    echo "Flashing kernel images..."
+    sudo fastboot flash dtbo $OUT/arch/arm64/boot/dtbo.img
+    sudo fastboot flash boot $OUT/boot.img
+    sudo fastboot flash vendor_boot $OUT/vendor_boot.img
+
+    sudo fastboot reboot
+}
+
 DATE_START=$(date +"%s")
 
 echo -e "${green}"
 echo "-----------------"
-echo "Making Kernel:"
+echo "Making Kernel:  "
 echo "-----------------"
 echo -e "${restore}"
 
@@ -86,12 +124,35 @@ while read -p "Start building (y/n)? " dchoice
 do
 case "$dchoice" in
     y|Y )
-        make_kernel
+        make_kernel || exit 1
+        make_bootimg
+        make_vendor_bootimg
         break
         ;;
     n|N )
         echo
-        echo "Abort!"
+        echo
+        exit 1
+        ;;
+    * )
+        echo
+        echo "Invalid try again!"
+        echo
+        ;;
+esac
+done
+
+echo
+
+while read -p "Flash kernel images (y/n)? " dchoice
+do
+case "$dchoice" in
+    y|Y )
+        flash_images
+        break
+        ;;
+    n|N )
+        echo
         echo
         break
         ;;
