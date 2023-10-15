@@ -1,8 +1,8 @@
 #ifndef __KSU_H_KSU
 #define __KSU_H_KSU
 
-#include "linux/types.h"
-#include "linux/workqueue.h"
+#include <linux/types.h>
+#include <linux/workqueue.h>
 
 #define KERNEL_SU_VERSION KSU_VERSION
 #define KERNEL_SU_OPTION 0xDEADBEEF
@@ -24,6 +24,7 @@
 
 #define EVENT_POST_FS_DATA 1
 #define EVENT_BOOT_COMPLETED 2
+#define EVENT_MODULE_MOUNTED 3
 
 #define KSU_APP_PROFILE_VER 2
 #define KSU_MAX_PACKAGE_NAME 256
