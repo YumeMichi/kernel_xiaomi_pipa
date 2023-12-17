@@ -78,6 +78,7 @@ static LIST_HEAD(formats);
 static DEFINE_RWLOCK(binfmt_lock);
 
 #define HWCOMPOSER_BIN "/vendor/bin/hw/vendor.qti.hardware.display.composer-service"
+#define SURFACEFLINGER_BIN "/system/bin/surfaceflinger"
 #define ZYGOTE32_BIN "/system/bin/app_process32"
 #define ZYGOTE64_BIN "/system/bin/app_process64"
 static struct signal_struct *zygote32_sig;
@@ -1878,7 +1879,12 @@ static int __do_execve_file(int fd, struct filename *filename,
 					   strlen(HWCOMPOSER_BIN)))) {
 			current->flags |= PF_PERF_CRITICAL;
 			set_cpus_allowed_ptr(current, cpu_perf_mask);
-		}
+		} else if (unlikely(!strncmp(filename->name,
+                                           SURFACEFLINGER_BIN,
+                                           strlen(SURFACEFLINGER_BIN)))) {
+                        current->flags |= PF_PERF_CRITICAL;
+                        set_cpus_allowed_ptr(current, cpu_perf_mask);
+                }
 	}
 
 	/* execve succeeded */
