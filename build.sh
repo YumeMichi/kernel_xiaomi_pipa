@@ -11,11 +11,8 @@ clear
 # Number of parallel jobs to run
 THREAD="-j$(nproc)"
 
-# AOSP clang 18.0.0 (https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/)
-CLANG_BUILD="r510928"
-
-# Path to executables in LLVM toolchain
-CLANG_BIN="/home/violet/toolchains/clang/clang-$CLANG_BUILD/bin"
+# Slim LLVM 18.1.4 (https://mirrors.edge.kernel.org/pub/tools/llvm/)
+CLANG_BIN="/home/violet/Workspace/toolchains/llvm-18.1.4-x86_64/bin"
 
 # Environment
 export PATH="$CLANG_BIN:$PATH"
