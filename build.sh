@@ -16,6 +16,8 @@ CLANG_BIN="/home/violet/Workspace/toolchains/clang/bin"
 
 # Environment
 export PATH="$CLANG_BIN:$PATH"
+export KBUILD_BUILD_USER=nobody
+export KBUILD_BUILD_HOST=android-build
 
 # Vars
 ARCH="arm64"
