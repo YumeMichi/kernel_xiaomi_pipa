@@ -16,6 +16,8 @@ CLANG_BIN="/mnt/ssd0/vauxite/prebuilts/clang-standalone/bin"
 
 # Environment
 export PATH="$CLANG_BIN:$PATH"
+export KBUILD_BUILD_USER=nobody
+export KBUILD_BUILD_HOST=android-build
 
 # Vars
 ARCH="arm64"
