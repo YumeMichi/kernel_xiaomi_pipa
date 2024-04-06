@@ -152,7 +152,7 @@ static void __sve_free(struct task_struct *task)
 	task->thread.sve_state = NULL;
 }
 
-static void sve_free(struct task_struct *task)
+static void __maybe_unused sve_free(struct task_struct *task)
 {
 	WARN_ON(test_tsk_thread_flag(task, TIF_SVE));
 
