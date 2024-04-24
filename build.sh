@@ -11,8 +11,8 @@ clear
 # Number of parallel jobs to run
 THREAD="-j$(nproc)"
 
-# Slim LLVM 18.1.4 (https://mirrors.edge.kernel.org/pub/tools/llvm/)
-CLANG_BIN="/home/violet/Workspace/toolchains/llvm-18.1.4-x86_64/bin"
+# LLVM 19.0.0 (https://github.com/Mandi-Sa/clang/releases/tag/amd64-kernel-arm_static-19)
+CLANG_BIN="/home/violet/Workspace/toolchains/clang/bin"
 
 # Environment
 export PATH="$CLANG_BIN:$PATH"
