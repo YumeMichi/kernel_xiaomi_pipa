@@ -12,5 +12,6 @@ config TOUCHSCREEN_NT36xxx_HOSTDL_SPI
 
 config TOUCHSCREEN_NVT_DEBUG_FS
 	bool "Touch debug interface"
+	depends on DEBUG_FS
 	help
 	  Control IRQ,suspend,sensor,debug firmware,etc.
