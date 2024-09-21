@@ -2691,8 +2691,8 @@ static int get_new_segment(struct f2fs_sb_info *sbi,
 find_other_zone:
 	secno = find_next_zero_bit(free_i->free_secmap, MAIN_SECS(sbi), hint);
 	if (secno >= MAIN_SECS(sbi)) {
-		secno = find_first_zero_bit(free_i->free_secmap,
-							MAIN_SECS(sbi));
+		secno = find_next_zero_bit(free_i->free_secmap,
+							MAIN_SECS(sbi), 0);
 		if (secno >= MAIN_SECS(sbi)) {
 			ret = -ENOSPC;
 			goto out_unlock;
