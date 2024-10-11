@@ -605,12 +605,12 @@ static int finish_preallocate_blocks(struct inode *inode)
 	}
 
 	f2fs_down_write(&F2FS_I(inode)->i_gc_rwsem[WRITE]);
-	filemap_invalidate_lock(inode->i_mapping);
+	f2fs_down_write(&F2FS_I(inode)->i_mmap_sem);
 
 	truncate_setsize(inode, i_size_read(inode));
 	ret = f2fs_truncate(inode);
 
-	filemap_invalidate_unlock(inode->i_mapping);
+	f2fs_up_write(&F2FS_I(inode)->i_mmap_sem);
 	f2fs_up_write(&F2FS_I(inode)->i_gc_rwsem[WRITE]);
 
 	if (!ret)
