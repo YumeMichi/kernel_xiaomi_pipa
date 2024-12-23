@@ -16,7 +16,7 @@
 #define DYNAMIC_BOOST_SLOTS_COUNT 5
 static DEFINE_MUTEX(boost_slot_mutex);
 static DEFINE_MUTEX(stune_boost_mutex);
-static int dynamic_boost(int boost);
+static int dynamic_boost(int boost, bool prefer_high_cap);
 struct boost_slot {
 	struct list_head list;
 	int idx;
@@ -1106,12 +1106,13 @@ schedtune_init_cgroups(void)
 }
 
 #ifdef CONFIG_DYNAMIC_STUNE_BOOST
-static int dynamic_boost(int boost)
+static int dynamic_boost(int boost, bool prefer_high_cap)
 {
 	int ret;
 	/* Backup boost_default */
 	int boost_default_backup = st_ta->boost_default;
 
+	prefer_high_cap_write(&st_ta->css, NULL, prefer_high_cap);
 	ret = boost_write(&st_ta->css, NULL, boost);
 
 	/* Restore boost_default */
@@ -1249,7 +1250,7 @@ static int _do_stune_boost(int boost, int *slot)
 	/* Boost if new value is greater than current */
 	mutex_lock(&stune_boost_mutex);
 	if (boost > st_ta->boost)
-		ret = dynamic_boost(boost);
+		ret = dynamic_boost(boost, 1);
 	mutex_unlock(&stune_boost_mutex);
 
 	return ret;
@@ -1273,7 +1274,7 @@ int reset_stune_boost(int slot)
 	mutex_lock(&stune_boost_mutex);
 	/* Boost only if value changed */
 	if (boost != st_ta->boost)
-		ret = dynamic_boost(boost);
+		ret = dynamic_boost(boost, 0);
 	mutex_unlock(&stune_boost_mutex);
 
 	return ret;
