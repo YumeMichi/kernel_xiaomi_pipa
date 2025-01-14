@@ -21,7 +21,7 @@ export KBUILD_BUILD_HOST=android-build
 
 # Vars
 ARCH="arm64"
-OS="15.0.0"
+OS="13.0.0"
 SPL="2024-12"
 KDIR=`readlink -f .`
 RAMFS=`readlink -f $KDIR/ramdisk`
