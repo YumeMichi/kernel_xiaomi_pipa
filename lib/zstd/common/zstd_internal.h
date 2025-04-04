@@ -162,7 +162,7 @@ static UNUSED_ATTR const U32 OF_defaultNormLog = OF_DEFAULTNORMLOG;
 *  Shared functions to include for inlining
 *********************************************/
 static void ZSTD_copy8(void* dst, const void* src) {
-#if defined(ZSTD_ARCH_ARM_NEON)
+#if defined(ZSTD_ARCH_ARM_NEON) && !defined(__aarch64__)
     vst1_u8((uint8_t*)dst, vld1_u8((const uint8_t*)src));
 #else
     ZSTD_memcpy(dst, src, 8);
@@ -207,7 +207,7 @@ typedef enum {
  *           The src buffer must be before the dst buffer.
  */
 MEM_STATIC FORCE_INLINE_ATTR
-void ZSTD_wildcopy(void* dst, const void* src, ptrdiff_t length, ZSTD_overlap_e const ovtype)
+void ZSTD_wildcopy(void* dst, const void* src, size_t length, ZSTD_overlap_e const ovtype)
 {
     ptrdiff_t diff = (BYTE*)dst - (const BYTE*)src;
     const BYTE* ip = (const BYTE*)src;
