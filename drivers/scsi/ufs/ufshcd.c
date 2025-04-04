@@ -620,6 +620,7 @@ static inline void ufshcd_remove_non_printable(char *val)
 		*val = ' ';
 }
 
+#ifdef CONFIG_TRACEPOINTS
 static void ufshcd_add_cmd_upiu_trace(struct ufs_hba *hba, unsigned int tag,
 		const char *str)
 {
@@ -645,6 +646,7 @@ static void ufshcd_add_tm_upiu_trace(struct ufs_hba *hba, unsigned int tag,
 	trace_ufshcd_upiu(dev_name(hba->dev), str, &descp->req_header,
 			&descp->input_param1);
 }
+#endif
 
 #define UFSHCD_MAX_CMD_LOGGING	200
 
@@ -756,6 +758,7 @@ static void ufshcd_cmd_log_init(struct ufs_hba *hba)
 {
 }
 
+#ifdef CONFIG_TRACEPOINTS
 static void __ufshcd_cmd_log(struct ufs_hba *hba, char *str, char *cmd_type,
 			     unsigned int tag, u8 cmd_id, u8 idn, u8 lun,
 			     sector_t lba, int transfer_len)
@@ -771,6 +774,7 @@ static void __ufshcd_cmd_log(struct ufs_hba *hba, char *str, char *cmd_type,
 
 	ufshcd_add_command_trace(hba, &entry);
 }
+#endif
 
 static void ufshcd_dme_cmd_log(struct ufs_hba *hba, char *str, u8 cmd_id)
 {
@@ -4146,7 +4150,9 @@ static int ufshcd_exec_dev_cmd(struct ufs_hba *hba,
 
 	hba->dev_cmd.complete = &wait;
 
+#ifdef CONFIG_TRACEPOINTS
 	ufshcd_add_query_upiu_trace(hba, tag, "query_send");
+#endif
 	/* Make sure descriptors are ready before ringing the doorbell */
 	wmb();
 	spin_lock_irqsave(hba->host->host_lock, flags);
@@ -4160,8 +4166,10 @@ static int ufshcd_exec_dev_cmd(struct ufs_hba *hba,
 	}
 	err = ufshcd_wait_for_dev_cmd(hba, lrbp, timeout);
 
+#ifdef CONFIG_TRACEPOINTS
 	ufshcd_add_query_upiu_trace(hba, tag,
 			err ? "query_complete_err" : "query_complete");
+#endif
 
 out_put_tag:
 	ufshcd_put_dev_cmd_tag(hba, tag);
@@ -7808,14 +7816,18 @@ static int __ufshcd_issue_tm_cmd(struct ufs_hba *hba,
 
 	spin_unlock_irqrestore(host->host_lock, flags);
 
+#ifdef CONFIG_TRACEPOINTS
 	ufshcd_add_tm_upiu_trace(hba, task_tag, "tm_send");
+#endif
 
 	/* wait until the task management command is completed */
 	err = wait_event_timeout(hba->tm_wq,
 			test_bit(free_slot, &hba->tm_condition),
 			msecs_to_jiffies(TM_CMD_TIMEOUT));
 	if (!err) {
+#ifdef CONFIG_TRACEPOINTS
 		ufshcd_add_tm_upiu_trace(hba, task_tag, "tm_complete_err");
+#endif
 		dev_err(hba->dev, "%s: task management cmd 0x%.2x timed-out\n",
 				__func__, tm_function);
 		if (ufshcd_clear_tm_cmd(hba, free_slot))
@@ -7829,7 +7841,9 @@ static int __ufshcd_issue_tm_cmd(struct ufs_hba *hba,
 		err = 0;
 		memcpy(treq, hba->utmrdl_base_addr + free_slot, sizeof(*treq));
 
+#ifdef CONFIG_TRACEPOINTS
 		ufshcd_add_tm_upiu_trace(hba, task_tag, "tm_complete");
+#endif
 
 		spin_lock_irqsave(hba->host->host_lock, flags);
 		__clear_bit(free_slot, &hba->outstanding_tasks);
