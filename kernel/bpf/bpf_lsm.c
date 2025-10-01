@@ -124,7 +124,11 @@ bpf_lsm_func_proto(enum bpf_func_id func_id, const struct bpf_prog *prog)
 	case BPF_FUNC_ima_inode_hash:
 		return prog->aux->sleepable ? &bpf_ima_inode_hash_proto : NULL;
 	default:
+#ifdef CONFIG_BPF_EVENTS
 		return tracing_prog_func_proto(func_id, prog);
+#else
+		return NULL;
+#endif
 	}
 }
 
