@@ -33,25 +33,15 @@ static inline int nf_osf_ttl(const struct sk_buff *skb,
 	const struct iphdr *ip = ip_hdr(skb);
 
 	if (ttl_check != -1) {
-		if (ttl_check == NF_OSF_TTL_TRUE)
+		switch (ttl_check) {
+		case NF_OSF_TTL_TRUE:
 			return ip->ttl == f_ttl;
-		if (ttl_check == NF_OSF_TTL_NOCHECK)
+			break;
+		case NF_OSF_TTL_NOCHECK:
 			return 1;
-		else if (ip->ttl <= f_ttl)
-			return 1;
-		else {
-			struct in_device *in_dev = __in_dev_get_rcu(skb->dev);
-			int ret = 0;
-
-			for_ifa(in_dev) {
-				if (inet_ifa_match(ip->saddr, ifa)) {
-					ret = (ip->ttl == f_ttl);
-					break;
-				}
-			}
-			endfor_ifa(in_dev);
-
-			return ret;
+		case NF_OSF_TTL_LESS:
+		default:
+			return ip->ttl <= f_ttl;
 		}
 	}
 
