@@ -1497,6 +1497,7 @@ static struct of_device_id bq2597x_charger_match_table[] = {
 static int bq2597x_get_dev_role(struct i2c_client *client)
 {
 	const struct of_device_id *of_id;
+	int dev_role;
 
 	of_id = of_match_device(of_match_ptr(bq2597x_charger_match_table), &client->dev);
 	if (of_id == NULL) {
@@ -1504,10 +1505,11 @@ static int bq2597x_get_dev_role(struct i2c_client *client)
 		return -EINVAL;
 	}
 
+	dev_role = (int)(uintptr_t)of_id->data;
 	dev_info(&client->dev, "%s: matched to %s, dev_role: %d.\n",
-			__func__, of_id->compatible, (int)of_id->data);
+			__func__, of_id->compatible, dev_role);
 
-	return (int)of_id->data;
+	return dev_role;
 }
 
 static int bq2597x_parse_dt(struct bq2597x *bq, struct device *dev)
@@ -2769,4 +2771,3 @@ module_i2c_driver(bq2597x_charger_driver);
 MODULE_DESCRIPTION("TI BQ2597x Charger Driver");
 MODULE_LICENSE("GPL v2");
 MODULE_AUTHOR("Texas Instruments");
-
