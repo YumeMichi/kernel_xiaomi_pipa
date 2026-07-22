@@ -579,7 +579,12 @@ static ssize_t dp_aux_transfer(struct drm_dp_aux *drm_aux,
 
 	mutex_lock(&aux->mutex);
 
-	ret = dp_aux_transfer_ready(aux, msg, true);
+	/*
+	 * Use the standard I2C-over-AUX sequence. The optional Qualcomm helper
+	 * re-addresses the EDID EEPROM for every 16-byte read, but some sinks
+	 * return reordered EDID chunks when that workaround is enabled.
+	 */
+	ret = dp_aux_transfer_ready(aux, msg, false);
 	if (ret)
 		goto unlock_exit;
 
