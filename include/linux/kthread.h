@@ -34,6 +34,17 @@ struct task_struct *kthread_create_on_cpu(int (*threadfn)(void *data),
 void kthread_set_per_cpu(struct task_struct *k, int cpu);
 bool kthread_is_per_cpu(struct task_struct *k);
 
+static inline void kthread_set_perf_critical_affinity(
+		struct task_struct *k, const struct cpumask *mask)
+{
+	if (mask == cpu_prime_mask)
+		k->pc_flags |= PC_PRIME_AFFINE;
+	else if (mask == cpu_perf_mask)
+		k->pc_flags |= PC_PERF_AFFINE;
+	else
+		k->pc_flags |= PC_LITTLE_AFFINE;
+}
+
 /**
  * kthread_run - create and wake a thread.
  * @threadfn: the function to run until signal_pending(current).
@@ -62,7 +73,7 @@ bool kthread_is_per_cpu(struct task_struct *k);
 	struct task_struct *__k						   \
 		= kthread_create(threadfn, data, namefmt, ## __VA_ARGS__); \
 	if (!IS_ERR(__k)) {						   \
-		__k->flags |= PF_PERF_CRITICAL;				   \
+		kthread_set_perf_critical_affinity(__k, perfmask);	   \
 		BUILD_BUG_ON(perfmask != cpu_lp_mask &&			   \
 			     perfmask != cpu_perf_mask &&		   \
 			     perfmask != cpu_prime_mask);		   \
