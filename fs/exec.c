@@ -1873,12 +1873,12 @@ static int __do_execve_file(int fd, struct filename *filename,
 		else if (unlikely(!strncmp(filename->name,
 					   HWCOMPOSER_BIN,
 					   strlen(HWCOMPOSER_BIN)))) {
-			current->flags |= PF_PERF_CRITICAL;
+			current->pc_flags |= PC_PERF_AFFINE;
 			set_cpus_allowed_ptr(current, cpu_perf_mask);
 		} else if (unlikely(!strncmp(filename->name,
                                            SURFACEFLINGER_BIN,
                                            strlen(SURFACEFLINGER_BIN)))) {
-                        current->flags |= PF_PERF_CRITICAL;
+                        current->pc_flags |= PC_PERF_AFFINE;
                         set_cpus_allowed_ptr(current, cpu_perf_mask);
                 }
 	}

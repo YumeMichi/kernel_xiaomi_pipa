@@ -884,6 +884,10 @@ static int update_cpus_allowed(struct cpuset *cs, struct task_struct *p,
 {
 	int ret;
 
+	/* Keep kernel-enforced cluster affinity across cpuset migrations. */
+	if (p->pc_flags)
+		return 0;
+
 	if (cpumask_subset(&p->cpus_requested, cs->cpus_requested)) {
 		ret = set_cpus_allowed_ptr(p, &p->cpus_requested);
 		if (!ret)
@@ -2544,7 +2548,7 @@ void cpuset_cpus_allowed(struct task_struct *tsk, struct cpumask *pmask)
 void cpuset_cpus_allowed_fallback(struct task_struct *tsk)
 {
 	rcu_read_lock();
-	if(!(tsk->flags & PF_PERF_CRITICAL))
+	if (!tsk->pc_flags)
 		do_set_cpus_allowed(tsk, is_in_v2_mode() ?
 			task_cs(tsk)->cpus_allowed : cpu_possible_mask);
 	rcu_read_unlock();
