@@ -101,7 +101,7 @@ extern void __put_task_struct_cb(struct rcu_head *rhp);
 
 static inline void put_task_struct(struct task_struct *t)
 {
-	if (atomic_dec_and_test(&t->usage))
+	if (refcount_dec_and_test(&t->usage))
 		call_rcu(&t->put_rcu, __put_task_struct_cb);
 }
 #else
