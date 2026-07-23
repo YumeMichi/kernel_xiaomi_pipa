@@ -623,7 +623,13 @@ static void rcu_read_unlock_special(struct task_struct *t)
 	if ((preempt_bh_were_disabled || irqs_were_disabled) &&
 	    t->rcu_read_unlock_special.b.blocked) {
 		/* Need to defer quiescent state until everything is enabled. */
-		raise_softirq_irqoff(RCU_SOFTIRQ);
+		/*
+		 * Tree RCU core processing runs in rcuc kthreads on this base,
+		 * so RCU_SOFTIRQ has no handler.  Request a reschedule instead;
+		 * the ensuing context switch reports the deferred QS.
+		 */
+		set_tsk_need_resched(current);
+		set_preempt_need_resched();
 		local_irq_restore(flags);
 		return;
 	}
