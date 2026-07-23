@@ -22,6 +22,7 @@
 #include <net/xdp.h>
 
 #include <linux/sched.h>
+#include <linux/rcupdate.h>
 #include <linux/workqueue.h>
 #include <linux/kthread.h>
 #include <linux/capability.h>
