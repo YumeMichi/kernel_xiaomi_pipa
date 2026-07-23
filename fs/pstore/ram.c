@@ -990,8 +990,15 @@ static int __init ramoops_memreserve(char *p)
 	size = memparse(p, &p) & PAGE_MASK;
 	ramoops_data.mem_size = size;
 	ramoops_data.mem_address = 0xB0000000;
+	/*
+	 * Reserve space for panic/oops records as well as the console.  Without
+	 * a record_size, the whole region was split between console and pmsg,
+	 * leaving no space for dmesg-ramoops records.
+	 */
+	ramoops_data.record_size = size / 4;
 	ramoops_data.console_size = size / 2;
-	ramoops_data.pmsg_size = size / 2;
+	if (IS_ENABLED(CONFIG_PSTORE_PMSG))
+		ramoops_data.pmsg_size = size / 4;
 	ramoops_data.dump_oops = 1;
 
 	pr_info("msm_reserve_ramoops_memory addr=%llx,size=%lx\n",
