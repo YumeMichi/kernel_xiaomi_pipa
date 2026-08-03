@@ -972,7 +972,7 @@ static int __remove_mapping(struct address_space *mapping, struct page *page,
 		if (lru_gen_enabled())
 			shadow = lru_gen_eviction(page);
 		mem_cgroup_swapout(page, swap);
-		__delete_from_swap_cache(page, shadow);
+		__delete_from_swap_cache(page, swap, shadow);
 		xa_unlock_irqrestore(&mapping->i_pages, flags);
 		put_swap_page(page, swap);
 	} else {
