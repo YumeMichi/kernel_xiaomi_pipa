@@ -753,7 +753,11 @@ unsigned int sysctl_sched_uclamp_util_min = SCHED_CAPACITY_SCALE;
 /* Max allowed maximum utilization */
 unsigned int sysctl_sched_uclamp_util_max = SCHED_CAPACITY_SCALE;
 
-/* Default UCLAMP_MIN for RT tasks without a task-specific request. */
+/*
+ * The default UCLAMP_MIN applied to RT tasks without a task-specific
+ * request. Keeping this tunable avoids hard-wiring all RT work to the
+ * maximum performance point on battery-powered devices.
+ */
 unsigned int sysctl_sched_uclamp_util_min_rt_default = SCHED_CAPACITY_SCALE;
 
 /* All clamps are required to be less or equal than these values */
@@ -864,6 +868,7 @@ static void __uclamp_update_util_min_rt_default(struct task_struct *p)
 
 	lockdep_assert_held(&p->pi_lock);
 
+	/* Do not overwrite an explicit task request. */
 	if (uc_se->user_defined)
 		return;
 
@@ -887,7 +892,10 @@ static void uclamp_sync_util_min_rt_default(void)
 {
 	struct task_struct *g, *p;
 
-	/* Synchronize against copy_process() before iterating tasks. */
+	/*
+	 * Synchronize against copy_process(): either a new task observes the
+	 * updated value in sched_post_fork(), or this iteration observes it.
+	 */
 	read_lock(&tasklist_lock);
 	smp_mb__after_spinlock();
 	read_unlock(&tasklist_lock);
@@ -1126,10 +1134,7 @@ static inline void uclamp_rq_reinc_id(struct rq *rq, struct task_struct *p,
 	uclamp_rq_dec_id(rq, p, clamp_id);
 	uclamp_rq_inc_id(rq, p, clamp_id);
 
-	/*
-	 * Make sure to clear the idle flag if we've transiently reached 0
-	 * active tasks on rq.
-	 */
+	/* A transiently empty rq must not retain the idle state. */
 	if (clamp_id == UCLAMP_MAX && (rq->uclamp_flags & UCLAMP_FLAG_IDLE))
 		rq->uclamp_flags &= ~UCLAMP_FLAG_IDLE;
 }
@@ -1346,6 +1351,11 @@ static void __setscheduler_uclamp(struct task_struct *p,
 	}
 }
 
+static void uclamp_post_fork(struct task_struct *p)
+{
+	uclamp_update_util_min_rt_default(p);
+}
+
 static void uclamp_fork(struct task_struct *p)
 {
 	enum uclamp_id clamp_id;
@@ -1360,11 +1370,6 @@ static void uclamp_fork(struct task_struct *p)
 		uclamp_se_set(&p->uclamp_req[clamp_id],
 			      uclamp_none(clamp_id), false);
 	}
-}
-
-static void uclamp_post_fork(struct task_struct *p)
-{
-	uclamp_update_util_min_rt_default(p);
 }
 
 #ifdef CONFIG_SMP
@@ -5261,7 +5266,7 @@ recheck:
 		if (p->sched_reset_on_fork && !reset_on_fork)
 			return -EPERM;
 
-		/* Can't change util-clamps */
+		/* Per-task clamps are controlled by privileged system services. */
 		if (attr->sched_flags & SCHED_FLAG_UTIL_CLAMP)
 			return -EPERM;
 	}
