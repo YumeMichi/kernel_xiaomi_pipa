@@ -3787,20 +3787,6 @@ unsigned long task_util_est(struct task_struct *p)
 	return max(task_util(p), _task_util_est(p));
 }
 
-#ifdef CONFIG_UCLAMP_TASK
-static inline unsigned long uclamp_task_util(struct task_struct *p)
-{
-	return clamp(task_util_est(p),
-		     uclamp_eff_value(p, UCLAMP_MIN),
-		     uclamp_eff_value(p, UCLAMP_MAX));
-}
-#else
-static inline unsigned long uclamp_task_util(struct task_struct *p)
-{
-	return task_util_est(p);
-}
-#endif
-
 static inline void util_est_enqueue(struct cfs_rq *cfs_rq,
 				    struct task_struct *p)
 {
@@ -3932,6 +3918,39 @@ bias_to_this_cpu(struct task_struct *p, int cpu, int start_cpu)
 	return base_test && start_cap_test;
 }
 
+/*
+ * Keep WALT's per-CPU migration margins for the measured utilization, while
+ * applying uclamp.min/max against the CPU's original capacity. A cap that
+ * fits a smaller CPU must not be defeated by migration margin; conversely a
+ * boosted task must still move up when its requested minimum cannot fit.
+ */
+static inline bool uclamp_util_fits_cpu(unsigned long util,
+					unsigned long uclamp_min,
+					unsigned long uclamp_max,
+					unsigned long capacity,
+					int cpu, unsigned int margin)
+{
+	unsigned long capacity_orig = capacity_orig_of(cpu);
+	bool fits, uclamp_max_fits;
+
+	fits = capacity * SCHED_CAPACITY_SCALE > util * margin;
+	if (!uclamp_is_used())
+		return fits;
+
+	/* Do not force a saturated maximum-capacity CPU to look like a fit. */
+	uclamp_max_fits = capacity_orig != SCHED_CAPACITY_SCALE ||
+				  uclamp_max != SCHED_CAPACITY_SCALE;
+	uclamp_max_fits &= uclamp_max <= capacity_orig;
+	fits |= uclamp_max_fits;
+
+	/* A minimum boost is a performance request, not a migration margin. */
+	uclamp_min = min(uclamp_min, uclamp_max);
+	if (util < uclamp_min && capacity_orig != SCHED_CAPACITY_SCALE)
+		fits &= uclamp_min <= capacity_orig;
+
+	return fits;
+}
+
 static inline bool task_fits_capacity(struct task_struct *p,
 					long capacity,
 					int cpu)
@@ -3947,7 +3966,10 @@ static inline bool task_fits_capacity(struct task_struct *p,
 	else
 		margin = sched_capacity_margin_up[task_cpu(p)];
 
-	return capacity * 1024 > uclamp_task_util(p) * margin;
+	return uclamp_util_fits_cpu(task_util_est(p),
+			uclamp_eff_value(p, UCLAMP_MIN),
+			uclamp_eff_value(p, UCLAMP_MAX),
+			capacity, cpu, margin);
 }
 
 static inline bool task_fits_max(struct task_struct *p, int cpu)
@@ -5468,8 +5490,18 @@ static unsigned long capacity_of(int cpu);
 
 bool __cpu_overutilized(int cpu, int delta)
 {
-	return (capacity_orig_of(cpu) * 1024) <
-		((cpu_util(cpu) + delta) * sched_capacity_margin_up[cpu]);
+	struct rq *rq = cpu_rq(cpu);
+	unsigned long util_min = 0;
+	unsigned long util_max = SCHED_CAPACITY_SCALE;
+
+	if (uclamp_is_used() && !uclamp_rq_is_idle(rq)) {
+		util_min = uclamp_rq_get(rq, UCLAMP_MIN);
+		util_max = uclamp_rq_get(rq, UCLAMP_MAX);
+	}
+
+	return !uclamp_util_fits_cpu(cpu_util(cpu) + delta,
+			util_min, util_max, capacity_orig_of(cpu), cpu,
+			sched_capacity_margin_up[cpu]);
 }
 
 bool cpu_overutilized(int cpu)
@@ -7617,6 +7649,8 @@ static void select_cpu_candidates(struct sched_domain *sd, cpumask_t *cpus,
 {
 	int highest_spare_cap_cpu = prev_cpu, best_idle_cpu = -1;
 	unsigned long spare_cap, max_spare_cap, util, cpu_cap;
+	unsigned long p_util_min = uclamp_eff_value(p, UCLAMP_MIN);
+	unsigned long p_util_max = uclamp_eff_value(p, UCLAMP_MAX);
 	bool prefer_idle = uclamp_latency_sensitive(p);
 	bool boosted = uclamp_boosted(p);
 	unsigned long target_cap = boosted ? 0 : ULONG_MAX;
@@ -7630,6 +7664,9 @@ static void select_cpu_candidates(struct sched_domain *sd, cpumask_t *cpus,
 		max_spare_cap = 0;
 
 		for_each_cpu_and(cpu, perf_domain_span(pd), sched_domain_span(sd)) {
+			unsigned long util_min = p_util_min;
+			unsigned long util_max = p_util_max;
+
 			if (!cpumask_test_cpu(cpu, &p->cpus_allowed))
 				continue;
 
@@ -7644,10 +7681,16 @@ static void select_cpu_candidates(struct sched_domain *sd, cpumask_t *cpus,
 			 * much capacity we can get out of the CPU; this is
 			 * aligned with schedutil_cpu_util().
 			 */
-			util = uclamp_rq_util_with(cpu_rq(cpu), util, p);
+			if (uclamp_is_used() && !uclamp_rq_is_idle(cpu_rq(cpu))) {
+				util_min = max(util_min,
+					uclamp_rq_get(cpu_rq(cpu), UCLAMP_MIN));
+				util_max = max(util_max,
+					uclamp_rq_get(cpu_rq(cpu), UCLAMP_MAX));
+			}
 
-			if (cpu_cap * 1024 <
-					util * sched_capacity_margin_up[cpu])
+			if (!uclamp_util_fits_cpu(util, util_min, util_max,
+					cpu_cap, cpu,
+					sched_capacity_margin_up[cpu]))
 				continue;
 
 			/*
@@ -7782,6 +7825,7 @@ static int find_energy_efficient_cpu(struct task_struct *p, int prev_cpu,
 	int task_boost = per_task_boost(p);
 	int boosted = (schedtune_task_boost(p) > 0) || (task_boost > 0);
 	int start_cpu;
+	unsigned long p_util_min = uclamp_eff_value(p, UCLAMP_MIN);
 
 	if (is_many_wakeup(sibling_count_hint) && prev_cpu != cpu &&
 			cpumask_test_cpu(prev_cpu, &p->cpus_allowed))
@@ -7830,7 +7874,8 @@ static int find_energy_efficient_cpu(struct task_struct *p, int prev_cpu,
 		goto fail;
 
 	sync_entity_load_avg(&p->se);
-	if (!task_util_est(p))
+	/* A capped task still consumes energy; only skip a genuinely empty task. */
+	if (!task_util_est(p) && p_util_min == 0)
 		goto unlock;
 
 	if (sched_feat(FIND_BEST_TARGET)) {
