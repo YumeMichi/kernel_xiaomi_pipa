@@ -446,11 +446,15 @@ static unsigned long sugov_get_util(struct sugov_cpu *sg_cpu)
 {
 	struct rq *rq = cpu_rq(sg_cpu->cpu);
 	unsigned long max = arch_scale_cpu_capacity(NULL, sg_cpu->cpu);
+	unsigned long util;
 
 	sg_cpu->max = max;
 	sg_cpu->bw_dl = cpu_bw_dl(rq);
 
-	return stune_util(sg_cpu->cpu, 0, &sg_cpu->walt_load);
+	util = min_t(unsigned long, SCHED_CAPACITY_SCALE,
+		     cpu_util_freq_walt(sg_cpu->cpu, &sg_cpu->walt_load));
+
+	return uclamp_rq_util_with(rq, util, NULL);
 }
 #else
 static unsigned long sugov_get_util(struct sugov_cpu *sg_cpu)
