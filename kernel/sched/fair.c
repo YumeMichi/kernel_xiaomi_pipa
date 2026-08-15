@@ -7682,7 +7682,8 @@ static void select_cpu_candidates(struct sched_domain *sd, cpumask_t *cpus,
 		struct perf_domain *pd, struct task_struct *p, int prev_cpu)
 {
 	int highest_spare_cap_cpu = prev_cpu, best_idle_cpu = -1;
-	unsigned long spare_cap, max_spare_cap, util, cpu_cap;
+	unsigned long spare_cap, util, cpu_cap;
+	long max_spare_cap;
 	unsigned long p_util_min = uclamp_eff_value(p, UCLAMP_MIN);
 	unsigned long p_util_max = uclamp_eff_value(p, UCLAMP_MAX);
 	bool prefer_idle = uclamp_latency_sensitive(p);
@@ -7695,7 +7696,8 @@ static void select_cpu_candidates(struct sched_domain *sd, cpumask_t *cpus,
 
 	for (; pd; pd = pd->next) {
 		max_spare_cap_cpu = -1;
-		max_spare_cap = 0;
+		/* Zero spare capacity is valid for a task capped by uclamp.max. */
+		max_spare_cap = -1;
 
 		for_each_cpu_and(cpu, perf_domain_span(pd), sched_domain_span(sd)) {
 			unsigned long util_min = p_util_min;
@@ -7731,7 +7733,7 @@ static void select_cpu_candidates(struct sched_domain *sd, cpumask_t *cpus,
 			 * Find the CPU with the maximum spare capacity in
 			 * the performance domain
 			 */
-			if (spare_cap > max_spare_cap) {
+			if ((long)spare_cap > max_spare_cap) {
 				max_spare_cap = spare_cap;
 				max_spare_cap_cpu = cpu;
 			}
