@@ -651,6 +651,9 @@ void cputime_adjust(struct task_cputime *curr, struct prev_cputime *prev,
 	}
 
 	stime = scale_stime(stime, rtime, stime + utime);
+	/* Rounding in scale_stime() must not exceed the total runtime. */
+	if (unlikely(stime > rtime))
+		stime = rtime;
 
 update:
 	/*
