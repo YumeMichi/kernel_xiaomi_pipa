@@ -267,6 +267,8 @@ struct usbpd_pm {
 	int non_ffc_bat_volt_max;
 	int bus_curr_compensate;
 	int therm_level_threshold;
+	int fc2_exit_vbat_hys_mv;
+	int fc2_exit_soc;
 	int pd_power_max;
 	bool cp_sec_enable;
 	bool use_qcom_gauge;

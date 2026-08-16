@@ -1292,8 +1292,8 @@ static int usbpd_pm_sm(struct usbpd_pm *pdpm)
 
 		if (pdpm->cp.vbat_volt < pm_config.min_vbat_for_cp) {
 			pr_info("batt_volt %d, waiting...\n", pdpm->cp.vbat_volt);
-		} else if ((pdpm->cp.vbat_volt > pm_config.bat_volt_lp_lmt - VBAT_HIGH_FOR_FC_HYS_MV
-			&& !pdpm->is_temp_out_fc2_range) || capacity >= CAPACITY_TOO_HIGH_THR) {
+		} else if ((pdpm->cp.vbat_volt > pm_config.bat_volt_lp_lmt - pdpm->fc2_exit_vbat_hys_mv
+			&& !pdpm->is_temp_out_fc2_range) || capacity >= pdpm->fc2_exit_soc) {
 			pr_info("batt_volt %d is too high for cp,\
 					charging with switch charger\n",
 					pdpm->cp.vbat_volt);
@@ -1855,6 +1855,20 @@ static int pd_policy_parse_dt(struct usbpd_pm *pdpm)
 		pr_err("therm-level-threshold missing, use default val\n");
 	pr_info("therm-level-threshold:%d\n", pdpm->therm_level_threshold);
 
+	pdpm->fc2_exit_vbat_hys_mv = VBAT_HIGH_FOR_FC_HYS_MV;
+	rc = of_property_read_u32(node, "mi,fc2-exit-vbat-hys-mv",
+			&pdpm->fc2_exit_vbat_hys_mv);
+	if (rc < 0)
+		pr_err("fc2-exit-vbat-hys-mv missing, use default val\n");
+	pr_info("fc2-exit-vbat-hys-mv:%d\n", pdpm->fc2_exit_vbat_hys_mv);
+
+	pdpm->fc2_exit_soc = CAPACITY_TOO_HIGH_THR;
+	rc = of_property_read_u32(node, "mi,fc2-exit-soc",
+			&pdpm->fc2_exit_soc);
+	if (rc < 0)
+		pr_err("fc2-exit-soc missing, use default val\n");
+	pr_info("fc2-exit-soc:%d\n", pdpm->fc2_exit_soc);
+
 	pdpm->battery_warm_th = JEITA_WARM_THR;
 	rc = of_property_read_u32(node,
 			"mi,pd-battery-warm-th", &pdpm->battery_warm_th);
@@ -1968,4 +1982,3 @@ module_exit(usbpd_pm_exit);
 MODULE_AUTHOR("Fei Jiang<jiangfei1@xiaomi.com>");
 MODULE_DESCRIPTION("Xiaomi usb pd statemachine for bq");
 MODULE_LICENSE("GPL");
-
