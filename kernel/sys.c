@@ -1256,23 +1256,38 @@ static int override_release(char __user *release, size_t len)
 #endif
 #endif
 
+#ifndef CONFIG_FAKE_UNAME_NONE
+static __always_inline bool fake_uname_task(void)
+{
+	const char *comm = current->comm;
+
+	return !strcmp(comm, "bpfloader") ||
+	       !strcmp(comm, "netbpfload") ||
+	       !strcmp(comm, "netd") ||
+	       strstarts(comm, "uprobestats");
+}
+#endif
+
 SYSCALL_DEFINE1(newuname, struct new_utsname __user *, name)
 {
 	struct new_utsname tmp;
+#ifndef CONFIG_FAKE_UNAME_NONE
+	bool fake_uname = fake_uname_task();
+#endif
 
 	down_read(&uts_sem);
 	memcpy(&tmp, utsname(), sizeof(tmp));
 #ifndef CONFIG_FAKE_UNAME_NONE
-	if (!strncmp(current->comm, "bpfloader", 9) ||
-	    !strncmp(current->comm, "netbpfload", 10) ||
-	    !strncmp(current->comm, "netd", 4) ||
-	    !strncmp(current->comm, "uprobestats", 11)) {
-		strcpy(tmp.release, FAKE_UNAME);
-		pr_debug("fake uname: %s/%d release=%s\n",
-			 current->comm, current->pid, tmp.release);
-	}
+	if (unlikely(fake_uname))
+		strscpy(tmp.release, FAKE_UNAME, sizeof(tmp.release));
 #endif
 	up_read(&uts_sem);
+
+#ifndef CONFIG_FAKE_UNAME_NONE
+	if (unlikely(fake_uname))
+		pr_debug("fake uname: %s/%d release=%s\n",
+			 current->comm, current->pid, tmp.release);
+#endif
 	if (copy_to_user(name, &tmp, sizeof(tmp)))
 		return -EFAULT;
 
