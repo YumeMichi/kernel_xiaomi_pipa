@@ -406,8 +406,17 @@ uvc_function_disconnect(struct uvc_device *uvc)
 	struct usb_composite_dev *cdev = uvc->func.config->cdev;
 	int ret;
 
+	mutex_lock(&uvc->lock);
+	if (uvc->func_unbound) {
+		dev_dbg(&uvc->vdev.dev,
+			"skipping function deactivate (unbound)\n");
+		mutex_unlock(&uvc->lock);
+		return;
+	}
+
 	if ((ret = usb_function_deactivate(&uvc->func)) < 0)
 		INFO(cdev, "UVC disconnect failed with %d\n", ret);
+	mutex_unlock(&uvc->lock);
 }
 
 /* --------------------------------------------------------------------------
@@ -616,6 +625,9 @@ uvc_function_bind(struct usb_configuration *c, struct usb_function *f)
 	int ret = -EINVAL;
 
 	INFO(cdev, "uvc_function_bind\n");
+	mutex_lock(&uvc->lock);
+	uvc->func_unbound = false;
+	mutex_unlock(&uvc->lock);
 
 	opts = fi_to_f_uvc_opts(f->fi);
 	/* Sanity check the streaming endpoint module parameters.
@@ -917,6 +929,10 @@ static void uvc_unbind(struct usb_configuration *c, struct usb_function *f)
 
 	INFO(cdev, "%s\n", __func__);
 
+	mutex_lock(&uvc->lock);
+	uvc->func_unbound = true;
+	mutex_unlock(&uvc->lock);
+
 	memset(&v4l2_event, 0, sizeof(v4l2_event));
 	v4l2_event.type = UVC_EVENT_UNBIND;
 	v4l2_event_queue(&uvc->vdev, &v4l2_event);
@@ -946,6 +962,8 @@ static struct usb_function *uvc_alloc(struct usb_function_instance *fi)
 
 	init_completion(&uvc->unbind_ok);
 	mutex_init(&uvc->video.mutex);
+	mutex_init(&uvc->lock);
+	uvc->func_unbound = true;
 	uvc->state = UVC_STATE_DISCONNECTED;
 	opts = fi_to_f_uvc_opts(fi);
 
