@@ -113,6 +113,8 @@ struct uvc_device {
 	enum uvc_state state;
 	struct usb_function func;
 	struct uvc_video video;
+	struct mutex lock; /* protects func_unbound */
+	bool func_unbound;
 
 	/* Descriptors */
 	struct {
