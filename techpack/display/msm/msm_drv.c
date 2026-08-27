@@ -314,6 +314,27 @@ struct vblank_work {
 	struct msm_drm_private *priv;
 };
 
+static void msm_drm_flush_workers(struct msm_drm_private *priv)
+{
+	int i;
+
+	for (i = 0; i < priv->num_crtcs; i++) {
+		if (priv->event_thread[i].thread)
+			kthread_flush_worker(&priv->event_thread[i].worker);
+	}
+
+	for (i = 0; i < priv->num_crtcs; i++) {
+		if (priv->disp_thread[i].thread)
+			kthread_flush_worker(&priv->disp_thread[i].worker);
+	}
+
+	if (priv->pp_event_thread)
+		kthread_flush_worker(&priv->pp_event_worker);
+
+	if (priv->wq)
+		flush_workqueue(priv->wq);
+}
+
 static void vblank_ctrl_worker(struct kthread_work *work)
 {
 	struct vblank_work *cur_work = container_of(work,
@@ -321,11 +342,15 @@ static void vblank_ctrl_worker(struct kthread_work *work)
 	struct msm_drm_private *priv = cur_work->priv;
 	struct msm_kms *kms = priv->kms;
 
+	if (READ_ONCE(priv->shutdown_in_progress))
+		goto out;
+
 	if (cur_work->enable)
 		kms->funcs->enable_vblank(kms, priv->crtcs[cur_work->crtc_id]);
 	else
 		kms->funcs->disable_vblank(kms, priv->crtcs[cur_work->crtc_id]);
 
+out:
 	kfree(cur_work);
 }
 
@@ -336,7 +361,8 @@ static int vblank_ctrl_queue_work(struct msm_drm_private *priv,
 	struct drm_crtc *crtc;
 	struct kthread_worker *worker;
 
-	if (!priv || crtc_id >= priv->num_crtcs)
+	if (!priv || crtc_id >= priv->num_crtcs ||
+			READ_ONCE(priv->shutdown_in_progress))
 		return -EINVAL;
 
 	cur_work = kzalloc(sizeof(*cur_work), GFP_ATOMIC);
@@ -2230,12 +2256,9 @@ static void msm_pdev_shutdown(struct platform_device *pdev)
 		return;
 	}
 
+	WRITE_ONCE(priv->shutdown_in_progress, true);
+	msm_drm_flush_workers(priv);
 	dsi_panel_power_turn_off(false);
-
-	msm_lastclose(ddev);
-
-	/* set this after lastclose to allow kickoff from lastclose */
-	priv->shutdown_in_progress = true;
 }
 
 static const struct of_device_id dt_match[] = {
