@@ -498,6 +498,7 @@ static enum oom_constraint constrained_alloc(struct oom_control *oc)
 static int oom_evaluate_task(struct task_struct *task, void *arg)
 {
 	struct oom_control *oc = arg;
+	struct mm_struct *oom_mm;
 	unsigned long points;
 
 	if (oom_unkillable_task(task, NULL, oc->nodemask))
@@ -510,7 +511,13 @@ static int oom_evaluate_task(struct task_struct *task, void *arg)
 	 * any memory is quite low.
 	 */
 	if (!is_sysrq_oom(oc) && tsk_is_oom_victim(task)) {
-		if (test_bit(MMF_OOM_SKIP, &task->signal->oom_mm->flags))
+		/*
+		 * Simple LMK marks victims with TIF_MEMDIE but doesn't set
+		 * signal->oom_mm. It is already being terminated, so don't
+		 * select it for a native memcg OOM kill.
+		 */
+		oom_mm = READ_ONCE(task->signal->oom_mm);
+		if (!oom_mm || test_bit(MMF_OOM_SKIP, &oom_mm->flags))
 			goto next;
 		goto abort;
 	}
@@ -1279,8 +1286,8 @@ bool out_of_memory(struct oom_control *oc)
 	unsigned long freed = 0;
 	enum oom_constraint constraint = CONSTRAINT_NONE;
 
-	/* Return true since Simple LMK automatically kills in the background */
-	if (IS_ENABLED(CONFIG_ANDROID_SIMPLE_LMK))
+	/* Simple LMK handles global pressure asynchronously, not memcg OOM. */
+	if (IS_ENABLED(CONFIG_ANDROID_SIMPLE_LMK) && !is_memcg_oom(oc))
 		return true;
 
 	if (oom_killer_disabled)

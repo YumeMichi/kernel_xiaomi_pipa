@@ -605,7 +605,13 @@ static void exit_mm(void)
 	mm_update_next_owner(mm);
 	mmput(mm);
 #ifdef CONFIG_ANDROID_SIMPLE_LMK
-	clear_thread_flag(TIF_MEMDIE);
+	/* Native memcg OOM victims participate in oom_victims accounting. */
+	if (test_thread_flag(TIF_MEMDIE)) {
+		if (current->signal->oom_mm)
+			exit_oom_victim();
+		else
+			clear_thread_flag(TIF_MEMDIE);
+	}
 #else
 	if (test_thread_flag(TIF_MEMDIE))
 		exit_oom_victim();
